@@ -12,7 +12,6 @@ import transforms3d as t3d
 
 from env.environment.isaac.isaac_rl_env import IsaacRLEnv
 from env.global_configs import ENV_REGEX_NAMESPACE
-from env.planner_manager.curobo_planner import CuroboPlanner
 from env.robot_manager.control_manager import ControlManager, MetaControl
 from utils.ensure_usd_path import ensure_usd_path
 
@@ -537,6 +536,8 @@ class RobotManager:
         return scene_cfg
 
     def _setup_planner(self, robot):
+        from env.planner_manager.curobo_planner import CuroboPlanner
+
         if robot.robot_type == "arm":
             root_pose = deepcopy(robot.entity_origin_pose)
             self.planner[robot.robot_name] = CuroboPlanner(
