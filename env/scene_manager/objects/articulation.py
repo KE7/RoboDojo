@@ -4,6 +4,7 @@ from isaaclab.sim.utils import find_global_fixed_joint_prim
 from isaacsim.core.api.materials import PreviewSurface
 from isaacsim.core.prims import SingleArticulation
 from isaacsim.core.simulation_manager import SimulationManager
+from utils.physics_view import get_physics_sim_view
 import isaacsim.core.utils.prims as prims_utils
 from isaacsim.core.utils.prims import get_prim_at_path, is_prim_path_valid
 from isaacsim.core.utils.stage import add_reference_to_stage, get_current_stage
@@ -230,7 +231,7 @@ class ArticulationObject(SingleArticulation):
         return modified_config
 
     def initialize(self):
-        self.physics_sim_view = SimulationManager.get_physics_sim_view()
+        self.physics_sim_view = get_physics_sim_view()
         super().initialize(physics_sim_view=self.physics_sim_view)
         self.upper_joint_positions = self.dof_properties["upper"].copy()
         self.lower_joint_positions = self.dof_properties["lower"].copy()

@@ -3,6 +3,7 @@ import random
 from isaacsim.core.prims.impl.single_prim_wrapper import _SinglePrimWrapper
 from isaacsim.core.prims.impl.xform_prim import XFormPrim
 from isaacsim.core.simulation_manager import SimulationManager
+from utils.physics_view import get_physics_sim_view
 from isaacsim.core.utils.prims import get_prim_at_path
 from isaacsim.core.utils.stage import add_reference_to_stage, get_current_stage
 import numpy as np
@@ -76,7 +77,7 @@ class DynamicObject(_SinglePrimWrapper):
         super().__init__(view=self._xform_prim_view)
 
     def initialize(self):
-        self.physics_sim_view = SimulationManager.get_physics_sim_view()
+        self.physics_sim_view = get_physics_sim_view()
         super().initialize(physics_sim_view=self.physics_sim_view)
 
     def _find_first_mesh_in_hierarchy(self, prim_path: str) -> str | None:

@@ -2,6 +2,7 @@ from isaacsim.core.api.materials.particle_material import ParticleMaterial
 from isaacsim.core.api.materials.preview_surface import PreviewSurface
 from isaacsim.core.prims import SingleClothPrim, SingleParticleSystem
 from isaacsim.core.simulation_manager import SimulationManager
+from utils.physics_view import get_physics_sim_view
 import isaacsim.core.utils.prims as prims_utils
 from isaacsim.core.utils.prims import get_prim_at_path, is_prim_path_valid
 from isaacsim.core.utils.rotations import quat_to_rot_matrix
@@ -352,7 +353,7 @@ class GarmentObject(SingleClothPrim):
         if self._device == "cpu":
             self.initial_points_positions = self._get_points_pose().detach().cpu().numpy()
         else:
-            self.physics_sim_view = SimulationManager.get_physics_sim_view()
+            self.physics_sim_view = get_physics_sim_view()
             self._cloth_prim_view.initialize(self.physics_sim_view)
             self.initial_points_positions = self._cloth_prim_view.get_world_positions()
 

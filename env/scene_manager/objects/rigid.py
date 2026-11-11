@@ -3,8 +3,10 @@ import random
 from isaacsim.core.api.materials.physics_material import PhysicsMaterial
 from isaacsim.core.prims import SingleGeometryPrim, SingleRigidPrim
 from isaacsim.core.simulation_manager import SimulationManager
+from utils.physics_view import get_physics_sim_view
 from isaacsim.core.utils.prims import get_prim_at_path, is_prim_path_valid
 from isaacsim.core.utils.stage import add_reference_to_stage
+from utils.nested_bodies import drop_nested_rigid_bodies
 from isaacsim.core.utils.string import find_unique_string_name
 import numpy as np
 from omegaconf import DictConfig
@@ -41,6 +43,7 @@ class RigidObject(SingleRigidPrim, SingleGeometryPrim):
                 else f"Failed to find an existing prim at path {prim_path}"
             )
             raise RuntimeError(error_message)
+        drop_nested_rigid_bodies(prim, root_is_body=True)    # RigidObject makes the root its rigid body
 
         """Initialize a rigid body object with geometry and physics properties."""
         self.stage = prim.GetStage()
@@ -235,7 +238,7 @@ class RigidObject(SingleRigidPrim, SingleGeometryPrim):
         self._apply_default_velocities()
 
     def initialize(self):
-        self.physics_sim_view = SimulationManager.get_physics_sim_view()
+        self.physics_sim_view = get_physics_sim_view()
         super().initialize(physics_sim_view=self.physics_sim_view)
 
     def _apply_default_velocities(self):

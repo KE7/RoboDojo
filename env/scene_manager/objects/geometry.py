@@ -4,6 +4,7 @@ from isaacsim.core.api.materials.physics_material import PhysicsMaterial
 from isaacsim.core.api.materials.preview_surface import PreviewSurface
 from isaacsim.core.prims import SingleGeometryPrim
 from isaacsim.core.simulation_manager import SimulationManager
+from utils.physics_view import get_physics_sim_view
 import isaacsim.core.utils.prims as prims_utils
 from isaacsim.core.utils.prims import get_prim_at_path, is_prim_path_valid
 from isaacsim.core.utils.stage import add_reference_to_stage, get_current_stage
@@ -287,7 +288,7 @@ class GeometryObject(SingleGeometryPrim):
         return {"root_pose": root_pose}
 
     def initialize(self):
-        self.physics_sim_view = SimulationManager.get_physics_sim_view()
+        self.physics_sim_view = get_physics_sim_view()
         super().initialize(physics_sim_view=self.physics_sim_view)
 
     def hide_prim(self, prim_path: str):

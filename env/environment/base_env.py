@@ -7,7 +7,7 @@ from isaaclab.scene import InteractiveSceneCfg
 from isaaclab_tasks.utils import parse_env_cfg  # this need dynamic import
 from isaacsim.core.utils.stage import get_current_stage
 from omegaconf import DictConfig, OmegaConf
-from omni.physx import acquire_physx_interface
+from omni.physx import get_physx_interface
 
 from env.environment.isaac.isaac_rl_env import IsaacRLEnv
 from env.seeding import seed_everywhere
@@ -78,16 +78,48 @@ def _apply_physx_settings(physx_cfg, config):
         setattr(physx_cfg, key, value)
 
 
-def _apply_render_settings(render_cfg, render_config, frequency_settings):
-    for key in _RENDER_KEYS:
-        setattr(render_cfg, key, render_config[key])
+# Isaac Lab 2.3's ``rendering_mode`` presets, as its ``apps/rendering_modes/<mode>.kit`` set them. Isaac Lab 3.0 has
+# no presets: the RTX renderer's global settings are applied directly, so the preset's values are applied here first.
+_RENDERING_MODES = {
+    "quality": {
+        "/rtx/translucency/enabled": True,
+        "/rtx/reflections/enabled": True,
+        "/rtx/reflections/denoiser/enabled": True,
+        "/rtx/directLighting/sampledLighting/enabled": True,
+        "/rtx/sceneDb/ambientLightIntensity": 1.0,
+        "/rtx/shadows/enabled": True,
+        "/rtx/indirectDiffuse/enabled": True,
+        "/rtx/indirectDiffuse/denoiser/enabled": True,
+        "/rtx/ambientOcclusion/enabled": True,
+        "/rtx/ambientOcclusion/denoiserMode": 0,
+        "/rtx/raytracing/subpixel/mode": 1,
+        "/rtx/raytracing/cached/enabled": True,
+        "/rtx-transient/dlssg/enabled": False,
+        "/rtx-transient/dldenoiser/enabled": True,
+        "/rtx/post/dlss/execMode": 2,
+        "/rtx/pathtracing/maxSamplesPerLaunch": 1000000,
+        "/rtx/viewTile/limit": 1000000,
+    },
+}
 
+
+def _apply_render_settings(render_config, frequency_settings):
+    """The 2.3 order: the rendering mode's preset, then the explicit settings, then carb and frequency settings."""
+    from isaaclab_physx.renderers.isaac_rtx_renderer_cfg import IsaacRtxRendererGlobalSettingsCfg
+    from isaaclab_physx.renderers.isaac_rtx_renderer_utils import apply_isaac_rtx_global_settings
+
+    mode = render_config.get("rendering_mode")
+    if mode is not None and mode not in _RENDERING_MODES:
+        raise ValueError(f"rendering_mode {mode!r} has no Isaac Lab 3 preset here; known: {sorted(_RENDERING_MODES)}")
+    if mode is not None:
+        apply_isaac_rtx_global_settings(IsaacRtxRendererGlobalSettingsCfg(carb_settings=dict(_RENDERING_MODES[mode])))
     carb_settings = render_config.get("carb_settings") or {}
     if isinstance(carb_settings, DictConfig):
         carb_settings = OmegaConf.to_container(carb_settings, resolve=True)
     carb_settings = dict(carb_settings)
     carb_settings.update(frequency_settings)
-    render_cfg.carb_settings = carb_settings
+    fields = {key: render_config[key] for key in _RENDER_KEYS if key != "rendering_mode"}
+    apply_isaac_rtx_global_settings(IsaacRtxRendererGlobalSettingsCfg(**fields, carb_settings=carb_settings))
 
 
 class BaseEnv(gym.Env):
@@ -134,6 +166,9 @@ class BaseEnv(gym.Env):
             self.sim_cfg.scene = self.interactiveSceneCfg
 
         self.setup_sim_cfg(config)
+        from utils.physics_view import configure_isaac_sim_manager
+
+        configure_isaac_sim_manager(self.device)
 
         import traceback
 
@@ -178,8 +213,8 @@ class BaseEnv(gym.Env):
             self.config.get("frequency_settings"),
         )
 
-        _apply_render_settings(self.sim_cfg.sim.render, render_config, frequency_settings)
-        _apply_physx_settings(self.sim_cfg.sim.physx, physx_config)
+        _apply_render_settings(render_config, frequency_settings)
+        _apply_physx_settings(self.sim_cfg.sim.physics, physx_config)
 
     def sim_step(self, render: bool = True):
         """
@@ -193,11 +228,11 @@ class BaseEnv(gym.Env):
         This function will be called after simulation context is created
         """
         # enable cpu garment and deformable
-        self.physics_interface = acquire_physx_interface()
+        self.physics_interface = get_physx_interface()
         self.physics_interface.overwrite_gpu_setting(1)
 
-        # expose physics context
-        self.physics_context = sim.sim.get_physics_context()
+        # expose physics context (Isaac Lab 3.0's SimulationContext has none; nothing reads it)
+        self.physics_context = getattr(sim.sim, "get_physics_context", lambda: None)()
 
     def close(self):
         try:

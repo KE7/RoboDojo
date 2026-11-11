@@ -14,6 +14,7 @@ from env.environment.isaac.isaac_rl_env import IsaacRLEnv
 from env.global_configs import ENV_REGEX_NAMESPACE
 from env.robot_manager.control_manager import ControlManager, MetaControl
 from utils.ensure_usd_path import ensure_usd_path
+from utils.isaac_data import isaac_lab_quat, pose_wxyz, tensor
 
 
 class RobotManager:
@@ -88,8 +89,8 @@ class RobotManager:
         for idx, robot in enumerate(self.robot_list):
             key = self.robot_key[idx]
             if robot.robot_type == "arm":
-                target_joints = key.data.default_joint_pos.clone()
-                target_vel = key.data.default_joint_vel.clone()
+                target_joints = tensor(key.data, "default_joint_pos").clone()
+                target_vel = tensor(key.data, "default_joint_vel").clone()
                 key.set_joint_position_target(target_joints)
                 key.set_joint_velocity_target(target_vel)
 
@@ -144,7 +145,7 @@ class RobotManager:
         key = self.robot_key[self.robot_list.index(robot)]
         entity_link = key.body_names
         env_origin_pos = deepcopy(self.scene.env_origins)
-        link_pose = key.data.body_link_pose_w.clone()
+        link_pose = pose_wxyz(key.data, "body_link_pose_w").clone()
 
         if link_name not in entity_link:
             raise ValueError(f"Link name {link_name} not found in robot {robot.robot_name}")
@@ -175,7 +176,7 @@ class RobotManager:
         results = {}
         key = self.robot_key[self.robot_list.index(robot)]
         arm_indices = robot.arm_joint_indices
-        joint_state = key.data.joint_pos.clone()
+        joint_state = tensor(key.data, "joint_pos").clone()
         for env_idx in range(self.num_envs):
             if env_idx in env_idx_list:
                 joints = deepcopy(joint_state[env_idx][arm_indices])
@@ -191,7 +192,7 @@ class RobotManager:
         results = {}
         key = self.robot_key[self.robot_list.index(robot)]
         gripper_indices = robot.gripper_joint_indices
-        joint_state = key.data.joint_pos.clone()
+        joint_state = tensor(key.data, "joint_pos").clone()
         for env_idx in range(self.num_envs):
             if env_idx in env_idx_list:
                 joints = deepcopy(joint_state[env_idx][gripper_indices])
@@ -625,7 +626,7 @@ class RobotManager:
             prim_path=f"{ENV_REGEX_NAMESPACE}/robot{idx}",
             init_state=ArticulationCfg.InitialStateCfg(
                 pos=base_pose[:3],
-                rot=base_pose[-4:],
+                rot=isaac_lab_quat(base_pose[-4:]),    # RoboDojo poses are wxyz
                 joint_pos=scene_cfg.init_state.joint_pos,
             ),
         )

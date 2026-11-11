@@ -5,6 +5,7 @@ from typing import List, Tuple
 
 from isaacsim.core.prims import SingleGeometryPrim
 from isaacsim.core.simulation_manager import SimulationManager
+from utils.physics_view import get_physics_sim_view
 from isaacsim.core.utils.prims import is_prim_path_valid
 from isaacsim.core.utils.semantics import add_labels, remove_labels
 from isaacsim.core.utils.stage import add_reference_to_stage, get_current_stage
@@ -147,7 +148,7 @@ class CameraManager:
         """
         This method should be called after the simulation context is created.
         """
-        self.physics_sim_view = SimulationManager.get_physics_sim_view()
+        self.physics_sim_view = get_physics_sim_view()
         for env_id in range(self.num_envs):
             for camera_xform in self.cameras_xform[env_id]:
                 camera_xform.initialize(self.physics_sim_view)

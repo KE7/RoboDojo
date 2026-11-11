@@ -3,6 +3,7 @@ from isaaclab.assets.articulation import ArticulationCfg
 import isaaclab.sim as sim_utils
 
 from env.global_configs import ROBOTS_PATH
+from utils.isaac_data import isaac_lab_quat
 
 
 def get_robot_config():
@@ -32,7 +33,7 @@ def get_robot_config():
                 "joint8": 0.044,
             },
             pos=(0.25, -0.25, 0.0),
-            rot=(0.707, 0, 0, 0.707),
+            rot=isaac_lab_quat((0.707, 0, 0, 0.707)),    # wxyz
         ),
         actuators={
             "arm": ImplicitActuatorCfg(
