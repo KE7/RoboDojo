@@ -350,6 +350,13 @@ class CameraView(XFormPrim):
 
             # use a warp kernel to convert the linear sensor data to a batch of images
             num_tiles_x = self.tiled_resolution[0] // width
+            expected = self.tiled_resolution[0] * self.tiled_resolution[1] * channels
+            if tiled_data.size < expected:     # the kernel would read past the annotator's buffer
+                raise RuntimeError(
+                    f"tiled {annotator_type} buffer holds {tiled_data.size} values, shape {tiled_data.shape}, "
+                    f"dtype {tiled_data.dtype}; expected {expected} for tiles {self.tiled_resolution} of "
+                    f"{width}x{height} x{channels} over {num_cameras} cameras"
+                )
             wp.launch(
                 kernel=reshape_tiled_image,
                 dim=(num_cameras, height, width),

@@ -196,6 +196,12 @@ class BaseEnv(gym.Env):
         """
         if self.sim is not None:
             self.sim.sim.render()
+            if hasattr(self.sim.sim, "update_visualizers"):
+                # Isaac Lab 3.0's render only updates visualizers; headless there are none, and Kit's app loop, which
+                # renders the cameras, is not pumped. Isaac Lab 2.x's render pumped it, so pump it here.
+                import omni.kit.app
+
+                omni.kit.app.get_app().update()
 
     def setup_sim_cfg(self, config):
         """
